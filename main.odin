@@ -26,6 +26,18 @@ main :: proc() {
 
   sdl.RenderClear(renderer);
   sdl.RenderPresent(renderer);
+
+  running := true
+  for running {
+    event: sdl.Event
+    for sdl.PollEvent(&event) {
+      if event.type == .QUIT {
+        running = false
+      }
+    }
+    sdl.RenderClear(renderer)
+    sdl.RenderPresent(renderer)
+  }
   sdl.Delay(2000);
 
   // Todo: start loop
