@@ -9,10 +9,12 @@ GameState :: struct {
 	padding:     u32,
 	is_paused:   bool,
 	is_running:  bool,
-	grid:        [][]bool,
+	grid:        [dynamic][dynamic]bool,
 	grid_w:      u32,
 	grid_h:      u32,
+	grid_row:    [dynamic]sdl.FRect,
 	cell_d:      u32,
+	cell_padding:      u32,
 	mouse_x:     f32,
 	mouse_y:     f32,
 	mouse_event: string,
@@ -29,14 +31,22 @@ main :: proc() {
 		is_running  = true,
 		grid        = nil,
 		cell_d      = 5,
+    cell_padding = 2,
 		mouse_event = "no mouse event yet",
 		debug_x     = 0,
 		debug_y     = 0,
 	}
 	game_state.debug_x = f32(game_state.padding)
 	game_state.debug_y = f32(game_state.window_h - (2 * game_state.padding))
-	game_state.grid_h = game_state.window_h / game_state.cell_d
-	game_state.grid_w = game_state.window_w / game_state.cell_d
+	game_state.grid_h = game_state.window_h / (game_state.cell_d + game_state.cell_padding)
+	game_state.grid_w = game_state.window_w / (game_state.cell_d + game_state.cell_padding)
+
+  // Todo: fill Rects to use draw Rects later 
+  //for i in 0 ..< game_state.grid_h {
+  //  for j in 0 ..< game_state.grid_w {
+  //  }
+  //}
+
 
 	if ok := sdl.Init({.VIDEO}); !ok {
 		fmt.println("failed to init sdl: ", sdl.GetError())
@@ -90,9 +100,9 @@ main :: proc() {
 		}
 		sdl.RenderClear(renderer)
 
-		// Todo: show fps
-		// debug section
 		sdl.SetRenderDrawColor(renderer, 55, 65, 81, 255)
+
+		// debug section
 		line_y := game_state.debug_y - f32(game_state.padding)
 		_ = sdl.RenderLine(renderer, 0, line_y, f32(game_state.window_w), line_y)
 
