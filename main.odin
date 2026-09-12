@@ -5,14 +5,14 @@ import "core:math"
 import sdl "vendor:sdl3"
 
 GameState :: struct {
-	window_w:     u32,
-	window_h:     u32,
-	padding:      u32,
+	window_w:     f32,
+	window_h:     f32,
+	padding:      f32,
 	is_paused:    bool,
 	is_running:   bool,
 	grid:         [dynamic][dynamic]bool,
-	grid_rows:    u32,
-	grid_cols:    u32,
+	grid_rows:    f32,
+	grid_cols:    f32,
 	grid_row:     [dynamic]sdl.FRect,
 	cell_d:       f32,
 	cell_padding: f32,
@@ -41,11 +41,11 @@ main :: proc() {
   // Note: once resize is handled turn this into a function
   // make cell_d a factor of the window size, same for padding
   // cell padding can be a factor of cell size maybe
-	game_state.debug_x = f32(game_state.padding)
-	game_state.debug_y = f32(game_state.window_h - (2 * game_state.padding))
-	game_state.grid_rows = u32(math.floor_f32(f32((game_state.window_h - (3 * game_state.padding)) / u32(game_state.cell_d + game_state.cell_padding))))
-	game_state.grid_cols = u32(math.floor_f32(f32(game_state.window_w - (2 * game_state.padding)) / f32(game_state.cell_d + game_state.cell_padding)))
-	game_state.grid_row = make([dynamic]sdl.FRect, game_state.grid_cols)
+	game_state.debug_x = game_state.padding
+	game_state.debug_y = game_state.window_h - (2 * game_state.padding)
+	game_state.grid_rows = math.floor_f32((game_state.window_h - (3 * game_state.padding)) / (game_state.cell_d + game_state.cell_padding))
+	game_state.grid_cols = math.floor_f32((game_state.window_w - (2 * game_state.padding)) / (game_state.cell_d + game_state.cell_padding))
+	game_state.grid_row = make([dynamic]sdl.FRect, int(game_state.grid_cols))
 
 	if ok := sdl.Init({.VIDEO}); !ok {
 		fmt.println("failed to init sdl: ", sdl.GetError())
@@ -129,7 +129,7 @@ gridRow :: proc(game_state: ^GameState, y: f32) {
   padding := f32(game_state.padding)
   cell_padding := game_state.cell_padding
 
-  for i in 0 ..< game_state.grid_cols {
+  for i in 0 ..< int(game_state.grid_cols) {
     game_state.grid_row[i] = sdl.FRect {
       padding + (f32(i) * (cell_d + cell_padding) + cell_padding),
       y + padding,
