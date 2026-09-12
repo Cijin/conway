@@ -4,49 +4,55 @@ import "core:fmt"
 import sdl "vendor:sdl3"
 
 GameState :: struct {
-	window_w:    u32,
-	window_h:    u32,
-	padding:     u32,
-	is_paused:   bool,
-	is_running:  bool,
-	grid:        [dynamic][dynamic]bool,
-	grid_w:      u32,
-	grid_h:      u32,
-	grid_row:    [dynamic]sdl.FRect,
-	cell_d:      u32,
-	cell_padding:      u32,
-	mouse_x:     f32,
-	mouse_y:     f32,
-	mouse_event: string,
-	debug_x:     f32,
-	debug_y:     f32,
+	window_w:     u32,
+	window_h:     u32,
+	padding:      u32,
+	is_paused:    bool,
+	is_running:   bool,
+	grid:         [dynamic][dynamic]bool,
+	grid_rows:    u32,
+	grid_cols:    u32,
+	grid_row:     [dynamic]sdl.FRect,
+	cell_d:       f32,
+	cell_padding: f32,
+	mouse_x:      f32,
+	mouse_y:      f32,
+	mouse_event:  string,
+	debug_x:      f32,
+	debug_y:      f32,
 }
 
 main :: proc() {
 	game_state := GameState {
-		window_w    = 600,
-		window_h    = 400,
-		padding     = 10,
-		is_paused   = false,
-		is_running  = true,
-		grid        = nil,
-		cell_d      = 5,
-    cell_padding = 2,
-		mouse_event = "no mouse event yet",
-		debug_x     = 0,
-		debug_y     = 0,
+		window_w     = 600,
+		window_h     = 400,
+		padding      = 10,
+		is_paused    = false,
+		is_running   = true,
+		grid         = nil,
+		cell_d       = 40,
+		cell_padding = 5,
+		mouse_event  = "no mouse event yet",
+		debug_x      = 0,
+		debug_y      = 0,
 	}
 	game_state.debug_x = f32(game_state.padding)
 	game_state.debug_y = f32(game_state.window_h - (2 * game_state.padding))
-	game_state.grid_h = game_state.window_h / (game_state.cell_d + game_state.cell_padding)
-	game_state.grid_w = game_state.window_w / (game_state.cell_d + game_state.cell_padding)
+	game_state.grid_rows = game_state.window_h / u32(game_state.cell_d + game_state.cell_padding)
+	game_state.grid_cols = game_state.window_w / u32(game_state.cell_d + game_state.cell_padding + (2 * f32(game_state.padding)))
+	game_state.grid_row = make([dynamic]sdl.FRect, game_state.grid_cols)
 
-  // Todo: fill Rects to use draw Rects later 
-  //for i in 0 ..< game_state.grid_h {
-  //  for j in 0 ..< game_state.grid_w {
-  //  }
-  //}
-
+	cell_d := game_state.cell_d
+  padding := f32(game_state.padding)
+	cell_padding := game_state.cell_padding
+	for i in 0 ..< game_state.grid_cols {
+		game_state.grid_row[i] = sdl.FRect {
+			padding + (f32(i) * (cell_d + cell_padding) + cell_padding),
+			cell_padding,
+			cell_d,
+			cell_d,
+		}
+	}
 
 	if ok := sdl.Init({.VIDEO}); !ok {
 		fmt.println("failed to init sdl: ", sdl.GetError())
@@ -101,6 +107,8 @@ main :: proc() {
 		sdl.RenderClear(renderer)
 
 		sdl.SetRenderDrawColor(renderer, 55, 65, 81, 255)
+
+		_ = sdl.RenderRects(renderer, raw_data(game_state.grid_row), i32(len(game_state.grid_row)))
 
 		// debug section
 		line_y := game_state.debug_y - f32(game_state.padding)
