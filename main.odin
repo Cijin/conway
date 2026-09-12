@@ -127,9 +127,9 @@ main :: proc() {
 			)
 
 			for j in 0 ..< game_state.grid_cols {
-				if game_state.grid[i][j] {
+				if !game_state.grid[i][j] {
 					sdl.SetRenderDrawColor(renderer, 206, 17, 38, 100)
-					_ = sdl.RenderFillRect(renderer, &game_state.grid_row[i])
+					_ = sdl.RenderFillRect(renderer, &game_state.grid_row[j])
 				}
 			}
 		}
