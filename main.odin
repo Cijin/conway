@@ -103,7 +103,7 @@ main :: proc() {
 
     // grid
     for i in 0..<game_state.grid_rows {
-      gridRow(&game_state, f32(i) * (game_state.cell_d + game_state.cell_padding))
+      gridRow(&game_state, i * (game_state.cell_d + game_state.cell_padding))
       _ = sdl.RenderRects(renderer, raw_data(game_state.grid_row), i32(len(game_state.grid_row)))
     }
 
