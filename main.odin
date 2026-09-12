@@ -126,9 +126,11 @@ main :: proc() {
 				i32(len(game_state.grid_row)),
 			)
 
-			if i %% 2 == 0 {
-				sdl.SetRenderDrawColor(renderer, 206, 17, 38, 100)
-				_ = sdl.RenderFillRect(renderer, &game_state.grid_row[i])
+			for j in 0 ..< game_state.grid_cols {
+				if game_state.grid[i][j] {
+					sdl.SetRenderDrawColor(renderer, 206, 17, 38, 100)
+					_ = sdl.RenderFillRect(renderer, &game_state.grid_row[i])
+				}
 			}
 		}
 
