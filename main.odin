@@ -37,6 +37,10 @@ main :: proc() {
 		debug_x      = 0,
 		debug_y      = 0,
 	}
+
+  // Note: once resize is handled turn this into a function
+  // make cell_d a factor of the window size, same for padding
+  // cell padding can be a factor of cell size maybe
 	game_state.debug_x = f32(game_state.padding)
 	game_state.debug_y = f32(game_state.window_h - (2 * game_state.padding))
 	game_state.grid_rows = u32(math.floor_f32(f32((game_state.window_h - (3 * game_state.padding)) / u32(game_state.cell_d + game_state.cell_padding))))
