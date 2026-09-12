@@ -11,8 +11,8 @@ GameState :: struct {
 	is_paused:    bool,
 	is_running:   bool,
 	grid:         [dynamic][dynamic]bool,
-	grid_rows:    f32,
-	grid_cols:    f32,
+	grid_rows:    u32,
+	grid_cols:    u32,
 	grid_row:     [dynamic]sdl.FRect,
 	cell_d:       f32,
 	cell_padding: f32,
@@ -38,14 +38,30 @@ main :: proc() {
 		debug_y      = 0,
 	}
 
-  // Note: once resize is handled turn this into a function
-  // make cell_d a factor of the window size, same for padding
-  // cell padding can be a factor of cell size maybe
+	// Note: once resize is handled turn this into a function
+	// make cell_d a factor of the window size, same for padding
+	// cell padding can be a factor of cell size maybe
 	game_state.debug_x = game_state.padding
 	game_state.debug_y = game_state.window_h - (2 * game_state.padding)
-	game_state.grid_rows = math.floor_f32((game_state.window_h - (3 * game_state.padding)) / (game_state.cell_d + game_state.cell_padding))
-	game_state.grid_cols = math.floor_f32((game_state.window_w - (2 * game_state.padding)) / (game_state.cell_d + game_state.cell_padding))
+	game_state.grid_rows = u32(
+		math.floor_f32(
+			(game_state.window_h - (3 * game_state.padding)) /
+			(game_state.cell_d + game_state.cell_padding),
+		),
+	)
+	game_state.grid_cols = u32(
+		math.floor_f32(
+			(game_state.window_w - (2 * game_state.padding)) /
+			(game_state.cell_d + game_state.cell_padding),
+		),
+	)
 	game_state.grid_row = make([dynamic]sdl.FRect, int(game_state.grid_cols))
+
+	game_state.grid = make([dynamic][dynamic]bool, game_state.grid_rows)
+	for i in 0 ..< game_state.grid_rows {
+		game_state.grid[i] = make([dynamic]bool, game_state.grid_cols)
+	}
+
 
 	if ok := sdl.Init({.VIDEO}); !ok {
 		fmt.println("failed to init sdl: ", sdl.GetError())
@@ -99,15 +115,25 @@ main :: proc() {
 		}
 		sdl.RenderClear(renderer)
 
-		sdl.SetRenderDrawColor(renderer, 55, 65, 81, 255)
 
-    // grid
-    for i in 0..<game_state.grid_rows {
-      gridRow(&game_state, i * (game_state.cell_d + game_state.cell_padding))
-      _ = sdl.RenderRects(renderer, raw_data(game_state.grid_row), i32(len(game_state.grid_row)))
-    }
+		// grid
+		for i in 0 ..< game_state.grid_rows {
+			sdl.SetRenderDrawColor(renderer, 55, 65, 81, 255)
+			gridRow(&game_state, f32(i) * (game_state.cell_d + game_state.cell_padding))
+			_ = sdl.RenderRects(
+				renderer,
+				raw_data(game_state.grid_row),
+				i32(len(game_state.grid_row)),
+			)
+
+			if i %% 2 == 0 {
+				sdl.SetRenderDrawColor(renderer, 206, 17, 38, 100)
+				_ = sdl.RenderFillRect(renderer, &game_state.grid_row[i])
+			}
+		}
 
 		// debug section
+		sdl.SetRenderDrawColor(renderer, 55, 65, 81, 255)
 		line_y := game_state.debug_y - f32(game_state.padding)
 		_ = sdl.RenderLine(renderer, 0, line_y, f32(game_state.window_w), line_y)
 
@@ -125,16 +151,16 @@ main :: proc() {
 }
 
 gridRow :: proc(game_state: ^GameState, y: f32) {
-  cell_d := game_state.cell_d
-  padding := f32(game_state.padding)
-  cell_padding := game_state.cell_padding
+	cell_d := game_state.cell_d
+	padding := f32(game_state.padding)
+	cell_padding := game_state.cell_padding
 
-  for i in 0 ..< int(game_state.grid_cols) {
-    game_state.grid_row[i] = sdl.FRect {
-      padding + (f32(i) * (cell_d + cell_padding) + cell_padding),
-      y + padding,
-      cell_d,
-      cell_d,
-    }
-  }
+	for i in 0 ..< int(game_state.grid_cols) {
+		game_state.grid_row[i] = sdl.FRect {
+			padding + (f32(i) * (cell_d + cell_padding) + cell_padding),
+			y + padding,
+			cell_d,
+			cell_d,
+		}
+	}
 }
