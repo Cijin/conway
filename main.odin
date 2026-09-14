@@ -5,11 +5,17 @@ import "core:math"
 import "core:math/rand"
 import sdl "vendor:sdl3"
 
+BUTTON_WIDTH: f32 : 60
+BUTTON_HEIGHT: f32 : 20
+CHAR_WIDTH: f32 : 8
+
 GameState :: struct {
 	window_w:             f32,
 	window_h:             f32,
 	padding:              f32,
-	is_paused:            bool,
+	menu_padding_x:       f32,
+	is_sim_running:       bool,
+	is_sim_paused:        bool,
 	is_running:           bool,
 	initial_grid_density: f32,
 	grid:                 [dynamic][dynamic]bool,
@@ -25,12 +31,23 @@ GameState :: struct {
 	debug_y:              f32,
 }
 
+Button :: struct {
+	rect:    ^sdl.FRect,
+	text:    string,
+	text_x:  f32,
+	text_y:  f32,
+	hovered: bool,
+	pressed: bool,
+}
+
 main :: proc() {
 	game_state := GameState {
 		window_w             = 600,
 		window_h             = 400,
 		padding              = 10,
-		is_paused            = false,
+		menu_padding_x       = 5,
+		is_sim_running       = false,
+		is_sim_paused        = false,
 		is_running           = true,
 		initial_grid_density = 0.20,
 		grid                 = nil,
@@ -44,11 +61,10 @@ main :: proc() {
 	// Note: once resize is handled turn this into a function
 	// make cell_d a factor of the window size, same for padding
 	// cell padding can be a factor of cell size maybe
-
-	// FixMe: when making the cells smaller they overflow onto the debug
-	// section
 	game_state.debug_x = game_state.padding
 	game_state.debug_y = game_state.window_h - (2 * game_state.padding)
+	// FixMe: when making the cells smaller they overflow onto the debug
+	// section
 	game_state.grid_rows = u32(
 		math.floor_f32(
 			(game_state.window_h - (3 * game_state.padding)) /
@@ -68,6 +84,47 @@ main :: proc() {
 		game_state.grid[i] = make([dynamic]bool, game_state.grid_cols)
 	}
 
+	// bring random living cells to life :)
+	for i in 0 ..< game_state.grid_rows {
+		for j in 0 ..< game_state.grid_cols {
+			game_state.grid[i][j] = rand.float32() < game_state.initial_grid_density
+		}
+	}
+
+	// menu
+	debug_top := game_state.debug_y - game_state.padding
+	debug_section_h := game_state.window_h - debug_top
+
+	// Todo: I don't like this
+	menu_y := debug_top + (debug_section_h - BUTTON_HEIGHT) / 2
+	menu_x := math.floor_f32(game_state.window_w / 2) + game_state.padding
+
+	game_menu := [2]Button {
+		Button {
+			rect = &sdl.FRect{menu_x, menu_y, BUTTON_WIDTH, BUTTON_HEIGHT},
+			text = "Reset",
+			hovered = false,
+			pressed = false,
+		},
+		Button {
+			// FixMe: there could be a better way to calculate this
+			rect    = &sdl.FRect {
+				menu_x + BUTTON_WIDTH + game_state.menu_padding_x,
+				menu_y,
+				BUTTON_WIDTH,
+				BUTTON_HEIGHT,
+			},
+			text    = "Start",
+			hovered = false,
+			pressed = false,
+		},
+	}
+
+	for &item in game_menu {
+		text_w := f32(len(item.text)) * CHAR_WIDTH
+		item.text_x = item.rect.x + (item.rect.w - text_w) / 2
+		item.text_y = item.rect.y + (item.rect.h - CHAR_WIDTH) / 2
+	}
 
 	if ok := sdl.Init({.VIDEO}); !ok {
 		fmt.println("failed to init sdl: ", sdl.GetError())
@@ -91,13 +148,6 @@ main :: proc() {
 	defer {
 		sdl.DestroyRenderer(renderer)
 		sdl.DestroyWindow(window)
-	}
-
-	// bring random living cells to life
-	for i in 0 ..< game_state.grid_rows {
-		for j in 0 ..< game_state.grid_cols {
-			game_state.grid[i][j] = rand.float32() < game_state.initial_grid_density
-		}
 	}
 
 	for game_state.is_running {
@@ -159,6 +209,11 @@ main :: proc() {
 			game_state.mouse_y,
 		)
 		sdl.RenderDebugText(renderer, game_state.debug_x, game_state.debug_y, text)
+
+		for item, i in game_menu {
+			sdl.RenderRect(renderer, item.rect)
+			sdl.RenderDebugText(renderer, item.text_x, item.text_y, fmt.ctprintf("%s", item.text))
+		}
 
 		sdl.RenderPresent(renderer)
 	}
