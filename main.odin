@@ -2,45 +2,51 @@ package main
 
 import "core:fmt"
 import "core:math"
+import "core:math/rand"
 import sdl "vendor:sdl3"
 
 GameState :: struct {
-	window_w:     f32,
-	window_h:     f32,
-	padding:      f32,
-	is_paused:    bool,
-	is_running:   bool,
-	grid:         [dynamic][dynamic]bool,
-	grid_rows:    u32,
-	grid_cols:    u32,
-	grid_row:     [dynamic]sdl.FRect,
-	cell_d:       f32,
-	cell_padding: f32,
-	mouse_x:      f32,
-	mouse_y:      f32,
-	mouse_event:  string,
-	debug_x:      f32,
-	debug_y:      f32,
+	window_w:             f32,
+	window_h:             f32,
+	padding:              f32,
+	is_paused:            bool,
+	is_running:           bool,
+	initial_grid_density: f32,
+	grid:                 [dynamic][dynamic]bool,
+	grid_rows:            u32,
+	grid_cols:            u32,
+	grid_row:             [dynamic]sdl.FRect,
+	cell_d:               f32,
+	cell_padding:         f32,
+	mouse_x:              f32,
+	mouse_y:              f32,
+	mouse_event:          string,
+	debug_x:              f32,
+	debug_y:              f32,
 }
 
 main :: proc() {
 	game_state := GameState {
-		window_w     = 600,
-		window_h     = 400,
-		padding      = 10,
-		is_paused    = false,
-		is_running   = true,
-		grid         = nil,
-		cell_d       = 20,
-		cell_padding = 5,
-		mouse_event  = "no mouse event yet",
-		debug_x      = 0,
-		debug_y      = 0,
+		window_w             = 600,
+		window_h             = 400,
+		padding              = 10,
+		is_paused            = false,
+		is_running           = true,
+		initial_grid_density = 0.20,
+		grid                 = nil,
+		cell_d               = 20,
+		cell_padding         = 5,
+		mouse_event          = "no mouse event yet",
+		debug_x              = 0,
+		debug_y              = 0,
 	}
 
 	// Note: once resize is handled turn this into a function
 	// make cell_d a factor of the window size, same for padding
 	// cell padding can be a factor of cell size maybe
+
+	// FixMe: when making the cells smaller they overflow onto the debug
+	// section
 	game_state.debug_x = game_state.padding
 	game_state.debug_y = game_state.window_h - (2 * game_state.padding)
 	game_state.grid_rows = u32(
@@ -87,6 +93,13 @@ main :: proc() {
 		sdl.DestroyWindow(window)
 	}
 
+	// bring random living cells to life
+	for i in 0 ..< game_state.grid_rows {
+		for j in 0 ..< game_state.grid_cols {
+			game_state.grid[i][j] = rand.float32() < game_state.initial_grid_density
+		}
+	}
+
 	for game_state.is_running {
 		event: sdl.Event
 		for sdl.PollEvent(&event) {
@@ -115,7 +128,6 @@ main :: proc() {
 		}
 		sdl.RenderClear(renderer)
 
-
 		// grid
 		for i in 0 ..< game_state.grid_rows {
 			sdl.SetRenderDrawColor(renderer, 55, 65, 81, 255)
@@ -127,7 +139,7 @@ main :: proc() {
 			)
 
 			for j in 0 ..< game_state.grid_cols {
-				if !game_state.grid[i][j] {
+				if game_state.grid[i][j] {
 					sdl.SetRenderDrawColor(renderer, 206, 17, 38, 100)
 					_ = sdl.RenderFillRect(renderer, &game_state.grid_row[j])
 				}
