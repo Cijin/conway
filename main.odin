@@ -3,6 +3,7 @@ package main
 import "core:fmt"
 import "core:math"
 import "core:math/rand"
+import "core:time"
 import sdl "vendor:sdl3"
 
 BUTTON_WIDTH: f32 : 60
@@ -13,7 +14,7 @@ REFRESH_RATE_HZ: f32 : 60
 GameState :: struct {
 	window_w:             f32,
 	window_h:             f32,
-  refresh_rate_hz :f32,
+	refresh_rate_hz:      f32,
 	padding:              f32,
 	menu_padding_x:       f32,
 	is_sim_running:       bool,
@@ -46,6 +47,7 @@ main :: proc() {
 	game_state := GameState {
 		window_w             = 600,
 		window_h             = 400,
+		refresh_rate_hz      = REFRESH_RATE_HZ,
 		padding              = 10,
 		menu_padding_x       = 5,
 		is_sim_running       = false,
@@ -97,9 +99,9 @@ main :: proc() {
 	debug_top := game_state.debug_y - game_state.padding
 	debug_section_h := game_state.window_h - debug_top
 
-	// Todo: I don't like this
+	// Todo: I don't like this (both)
 	menu_y := debug_top + (debug_section_h - BUTTON_HEIGHT) / 2
-	menu_x := math.floor_f32(game_state.window_w / 2) + game_state.padding
+	menu_x := math.floor_f32(game_state.window_w / 2) + (12 * game_state.padding)
 
 	game_menu := [2]Button {
 		Button {
@@ -133,19 +135,17 @@ main :: proc() {
 		return
 	}
 
-  display_count: i32 = 0
-  displays := sdl.GetDisplays(&display_count)
-  for d in displays[:display_count] {
-    display_mode := sdl.GetCurrentDisplayMode(d)
-    if display_mode != nil {
-      game_state.refresh_rate_hz = math.floor_f32(display_mode.refresh_rate)
-    }
-  }
-
-  if game_state.refresh_rate_hz == 0 {
-    game_state.refresh_rate_hz = REFRESH_RATE_HZ
-  }
-
+	// has to run after init
+	display_count: i32 = 0
+	displays := sdl.GetDisplays(&display_count)
+	fmt.println("display count: ", display_count)
+	for d in displays[:display_count] {
+		display_mode := sdl.GetCurrentDisplayMode(d)
+		if display_mode != nil {
+			game_state.refresh_rate_hz = display_mode.refresh_rate
+		}
+	}
+	sdl.free(displays)
 
 	window: ^sdl.Window
 	renderer: ^sdl.Renderer
@@ -166,7 +166,10 @@ main :: proc() {
 		sdl.DestroyWindow(window)
 	}
 
+	frame_budget := time.Duration(f64(time.Second) / f64(game_state.refresh_rate_hz))
 	for game_state.is_running {
+		frame_start := time.tick_now()
+
 		event: sdl.Event
 		for sdl.PollEvent(&event) {
 			#partial switch event.type {
@@ -219,10 +222,11 @@ main :: proc() {
 
 		sdl.SetRenderDrawColor(renderer, 209, 213, 219, 255)
 		text := fmt.ctprintf(
-			"%s  x=%.1f y=%.1f",
+			"%s  x=%.1f y=%.1f Refresh Rate=%.1f",
 			game_state.mouse_event,
 			game_state.mouse_x,
 			game_state.mouse_y,
+			game_state.refresh_rate_hz,
 		)
 		sdl.RenderDebugText(renderer, game_state.debug_x, game_state.debug_y, text)
 
@@ -232,6 +236,11 @@ main :: proc() {
 		}
 
 		sdl.RenderPresent(renderer)
+
+		elapsed := time.tick_since(frame_start)
+		if elapsed < frame_budget {
+			time.sleep(frame_budget - elapsed)
+		}
 	}
 }
 
