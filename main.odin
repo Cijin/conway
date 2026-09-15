@@ -8,10 +8,12 @@ import sdl "vendor:sdl3"
 BUTTON_WIDTH: f32 : 60
 BUTTON_HEIGHT: f32 : 20
 CHAR_WIDTH: f32 : 8
+REFRESH_RATE_HZ: f32 : 60
 
 GameState :: struct {
 	window_w:             f32,
 	window_h:             f32,
+  refresh_rate_hz :f32,
 	padding:              f32,
 	menu_padding_x:       f32,
 	is_sim_running:       bool,
@@ -107,7 +109,7 @@ main :: proc() {
 			pressed = false,
 		},
 		Button {
-			// FixMe: there could be a better way to calculate this
+			// FixMe: there is a better way to calculate this
 			rect    = &sdl.FRect {
 				menu_x + BUTTON_WIDTH + game_state.menu_padding_x,
 				menu_y,
@@ -130,6 +132,20 @@ main :: proc() {
 		fmt.println("failed to init sdl: ", sdl.GetError())
 		return
 	}
+
+  display_count: i32 = 0
+  displays := sdl.GetDisplays(&display_count)
+  for d in displays[:display_count] {
+    display_mode := sdl.GetCurrentDisplayMode(d)
+    if display_mode != nil {
+      game_state.refresh_rate_hz = math.floor_f32(display_mode.refresh_rate)
+    }
+  }
+
+  if game_state.refresh_rate_hz == 0 {
+    game_state.refresh_rate_hz = REFRESH_RATE_HZ
+  }
+
 
 	window: ^sdl.Window
 	renderer: ^sdl.Renderer
