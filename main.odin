@@ -138,7 +138,6 @@ main :: proc() {
 	// has to run after init
 	display_count: i32 = 0
 	displays := sdl.GetDisplays(&display_count)
-	fmt.println("display count: ", display_count)
 	for d in displays[:display_count] {
 		display_mode := sdl.GetCurrentDisplayMode(d)
 		if display_mode != nil {
